@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile": "NODE_ENV=release babel --presets es2015,stage-0,react ./src --out-dir ./dist; autoless --no-watch src dist",
-    "prepublish": "npm run build:dist",
+    "prepare": "npm run build:dist",
     "postversion": "npm publish",
     "build:dev": "webpack --env=dev --progress --profile --colors",
     "build:dist": "webpack --env=prod --progress --profile --colors",

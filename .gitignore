@@ -1,4 +1,5 @@
-dist/
+dist/*
+!dist/index.js
 node_modules/
 npm-debug.log
 examples/*.bundle.*
