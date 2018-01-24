@@ -1,5 +1,5 @@
 export function fetchAddresses(url,  headers={}, query) {
-  return fetch(`${url}${query}`, {
+  return fetch(`${url}`, {
     headers,
     credentials: 'same-origin',
     method: 'POST',
