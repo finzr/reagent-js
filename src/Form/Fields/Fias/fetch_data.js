@@ -1,7 +1,9 @@
 export function fetchAddresses(url,  headers={}, query) {
   return fetch(`${url}${query}`, {
     headers,
-    credentials: 'same-origin'
+    credentials: 'same-origin',
+    method: 'POST',
+    body: JSON.stringify({ query: query })
   }).then(response => response.json())
     .catch(() => { return { error: 'Ошибка получения адресов' } })
 }
