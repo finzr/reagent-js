@@ -307,10 +307,6 @@ class Fias extends Component {
         })
         break
       case MODES.SELECTING_HOUSE:
-        if (filteredHouses.length <= 5 && textValue.length > 0) {
-          items.push(this._listItemWithAddressDialogButton())
-        }
-
         filteredHouses.slice(0, 9).map((house, index) => {
           items.push(
             <ListItem
@@ -320,6 +316,10 @@ class Fias extends Component {
             />
           )
         })
+
+        if (filteredHouses.length <= 5 && textValue.length > 0) {
+          items.push(this._listItemWithAddressDialogButton())
+        }
         break
       default:
         break
