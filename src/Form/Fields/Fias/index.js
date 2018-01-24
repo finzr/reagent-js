@@ -307,7 +307,7 @@ class Fias extends Component {
         })
         break
       case MODES.SELECTING_HOUSE:
-        if (filteredHouses.length === 0 && textValue.length > 0) {
+        if (filteredHouses.length <= 5 && textValue.length > 0) {
           items.push(this._listItemWithAddressDialogButton())
         }
 
