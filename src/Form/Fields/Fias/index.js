@@ -42,7 +42,7 @@ class Fias extends Component {
 
     this.setState({
       textValue: addr.title + ', ',
-      addressSubstring: addr.title + ', ',
+      addressSubstring: addr.title + ',',
       mode: MODES.SELECTING_HOUSE
     })
 
