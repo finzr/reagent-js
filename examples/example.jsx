@@ -34,6 +34,16 @@ class App extends Component {
     const items = getBigDict()
     return (
       <Form
+        value={{
+          fias: {
+          build: null,
+          city: "Сыктывкар",
+          house: "28/1",
+          region: "Коми",
+          settlement: "Эжвинский",
+          street: "Мира"
+        }
+        }}
         schema={{
           type: 'object',
           properties: {
@@ -59,18 +69,7 @@ class App extends Component {
               type: 'fias',
               title: 'Адрес',
               addressesUrl: 'http://192.168.33.48:8060/lookup?lookup=',
-              housesUrl: 'http://192.168.33.48:8060/lookup/houses_and_address_structure?lookup=',
-              value: {
-                address: {
-                  build: null,
-                  city: "Сыктывкар",
-                  house: "28/1",
-                  region: "Коми",
-                  settlement: "Эжвинский",
-                  street: "Мира"
-                },
-                text: 'Респ Коми, г Сыктывкар, р-н Эжвинский, ул Мира'
-              }
+              housesUrl: 'http://192.168.33.48:8060/lookup/houses_and_address_structure?lookup='
             }
           },
           //required: ['fias', 'text']
