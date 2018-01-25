@@ -23,7 +23,7 @@ class Fias extends Component {
       addrObj: value || {},
       addresses: [],
       houses: [],
-      textValue: value ? value.text : '',
+      textValue: value ? this._prepareDefaultValue(value) : '',
       isVisible: false,
       fetchingError: null,
       openAddressDialog: false,
@@ -33,7 +33,19 @@ class Fias extends Component {
     }
   }
 
-  _data = () => ({ ...this.state.addrObj, text: this.state.textValue })
+  _prepareDefaultValue = (value) => {
+    const arr = new Array()
+    let addrParts = addressPartitionals
+    delete addrParts.zip
+
+    Object.keys(addrParts).map(k => {
+      if (value[k]) {
+        arr.push(value[k])
+      }
+    })
+
+    return arr.join(', ')
+  }
 
   _hideAddressDropdown = () => this.setState({ isVisible: false })
 
@@ -353,7 +365,7 @@ class Fias extends Component {
           key={name}
           type='hidden'
           name={name}
-          value={JSON.stringify(this._data())}
+          value={JSON.stringify(this.state.addrObj)}
         />
         <AddressDialog
           open={openAddressDialog}
