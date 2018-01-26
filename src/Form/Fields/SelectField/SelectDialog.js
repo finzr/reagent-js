@@ -46,7 +46,7 @@ class ItemListWithFilter extends React.Component {
   }
 
   render() {
-    const {title, open, items, selectedItems, searchWords, onClose, onSearch, onCheck, max} = this.props
+    const {title, open, items, selectedItems, searchWords, onClose, onSearch, onCheck, multiple} = this.props
     const format = getText.bind(null, { searchFieldHintText: 'Поиск...'}, this.context.MultiSelectField || {})
     return (
       <div style={{
@@ -59,6 +59,7 @@ class ItemListWithFilter extends React.Component {
           ref={ c => c && c.focus && c.focus() }
           value={searchWords}
           onChange={onSearch}
+          onFocus={moveCaretAtEnd}
           fullWidth={true}
         />
         <div style={{
@@ -67,7 +68,7 @@ class ItemListWithFilter extends React.Component {
           ref='itemList'
           >
           {
-            max === 1 ? (
+            !multiple ? (
               <RadioItems
                 items={ items }
                 onCheck={ onCheck }
@@ -93,8 +94,8 @@ class ItemListWithFilter extends React.Component {
 
 const Notification = ({totalCount, itemsCount}, {MultiSelectField={}}) => {
   const defaultText = {
-    emptyText: 'По заданному фильтру, ничего не найдено',
-    hasMoreText: 'Показаные первые {1} элементов из {2}',
+    emptyText: 'По заданному фильтру ничего не найдено',
+    hasMoreText: 'Показаны первые {1} элементов из {2}',
     foundedText: 'Найдено {1} элементов'
   }
   const format = getText.bind(null, defaultText, MultiSelectField)
@@ -129,6 +130,12 @@ Notification.contextTypes = {
     foundedText: PropTypes.string
   })
 };
+
+const moveCaretAtEnd = (e) => {
+  let temp_value = e.target.value
+  e.target.value = ''
+  e.target.value = temp_value
+}
 
 const DictionaryItem = ({id, title, description, checked, onCheck}) => (
   <ListItem

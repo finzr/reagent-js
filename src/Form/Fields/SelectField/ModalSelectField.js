@@ -8,11 +8,14 @@ import SelectedItemList from './SelectedItemList'
 
 import { getText } from '../../utils.js'
 
-class MultiSelectField extends Component {
+class ModalSelectField extends Component {
   constructor (props) {
     super (props)
     const { value, defaultValue } = props
-    const selectedItems = value || defaultValue || []
+    let selectedItems = value || defaultValue || []
+    if (!Array.isArray(selectedItems)) {
+      selectedItems = [selectedItems]
+    }
     this.state = {
       open: false,
       searchWords: '',
@@ -40,9 +43,9 @@ class MultiSelectField extends Component {
 
   handleItemCheck = (e, isSelected) => {
     const { selectedItems } = this.state
-    const { max } = this.props
+    const { multiple } = this.props
     const { value } = e.target
-    if (max === 1) {
+    if (!multiple) {
       this.setState({ selectedItems: [value] })
     } else if ( isSelected ) {
       this.setState({selectedItems: selectedItems.concat(value)})
@@ -62,14 +65,16 @@ class MultiSelectField extends Component {
 
   validation = () => {
     const { selectedItems } = this.state
-    const { min, max } = this.props
+    const { min, max, required } = this.props
     const { input } = this.refs
     const node = input.getInputNode()
     //console.log('[MULTISELECT FIELD] validation', selectedItems, min, max);
     if (min && selectedItems.length < min) {
-      node.setCustomValidity(`Должно быть выбрано более ${min} элементов`)
+      node.setCustomValidity(`Должно быть выбрано количество элементов большее, либо равное ${min}`)
     } else if (max && selectedItems.length > max) {
-      node.setCustomValidity(`Должно быть выбрано менее ${max} элементов`)
+      node.setCustomValidity(`Должно быть выбрано количество элементов меньшее, либо равное ${max}`)
+    } else if (required && !selectedItems.length) {
+      node.setCustomValidity('Пожалуйста, заполните это поле.')
     } else {
       node.setCustomValidity('')
     }
@@ -85,6 +90,7 @@ class MultiSelectField extends Component {
     )
     //const findedItems = searchWords == '' ? items : items.filter(({title}) => title.toLowerCase().includes(searchWords))
   }
+
   handleShowMore = () => {
     const { lastViewedIndex } = this.state
     if (lastViewedIndex < this.props.items.length) {
@@ -93,8 +99,8 @@ class MultiSelectField extends Component {
   }
 
   render () {
-    const { title, items, name, required, max } = this.props
-    const { MultiSelectField } = this.context
+    const { title, items, name, required, multiple } = this.props
+    const { ModalSelectField } = this.context
     const { searchWords, selectedItems, focused, open, lastViewedIndex } = this.state
     const filteredItems = this.filterItems(items, searchWords, selectedItems)
     return (
@@ -108,13 +114,15 @@ class MultiSelectField extends Component {
         />
         <div>
           <TextField
-            name='multiselect_input'
-            hintText={ getText(this.lang, MultiSelectField, 'text') }
+            name='modalselect_input'
+            hintText={ getText(this.lang, ModalSelectField, 'text') }
             fullWidth={ true }
             value=""
             onChange={ this.handleChange }
             onFocus={ this.handleFocus }
             onBlur={ this.handleBlur }
+            onDoubleClick={ this.handleOpen }
+            autoComplete='off'
             ref='input'
           />
           <SelectedItemList
@@ -136,16 +144,17 @@ class MultiSelectField extends Component {
           onMore={this.handleShowMore}
           onSearch={this.handleSearch}
           onCheck={this.handleItemCheck}
-          max={ max }
+          multiple={ multiple }
         />
       </div>
     )
   }
 }
 
-MultiSelectField.contextTypes = {
-  MultiSelectField: PropTypes.shape({
+ModalSelectField.contextTypes = {
+  ModalSelectField: PropTypes.shape({
     text: PropTypes.string
   })
 };
-export default MultiSelectField
+
+export default ModalSelectField

@@ -1,8 +1,5 @@
-export function fetchAddresses(url,  headerOptions={}, query) {
-  const headers = Object.assign({
-    'Content-Type': 'application/json'
-  }, headerOptions)
-  return fetch(`${url}`, {
+export function fetchAddresses(url,  headers={}, query) {
+  return fetch(url, {
     headers,
     credentials: 'same-origin',
     method: 'POST',

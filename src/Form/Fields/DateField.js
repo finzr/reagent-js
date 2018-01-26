@@ -68,7 +68,6 @@ class DateField extends Component {
           value={ value }
           ref='input'
           onChange={this._handleChange.bind(this)}
-          autoComplete={ false }
           errorText={error}
         />
         <Avatar

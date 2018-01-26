@@ -75,7 +75,6 @@ class SelectField extends Component {
           value={selectedItem.title}
           id='variants'
           ref='textField'
-          autocomplete={false}
           fullWidth={true}
           onClick={this._openPopover.bind(this)}
           onFocus={this._handleFocus.bind(this)}
@@ -120,7 +119,10 @@ class SelectField extends Component {
 
 SelectField.propTypes = {
   items: PropTypes.arrayOf( PropTypes.shape({
-    id: PropTypes.number.isRequired,
+    id: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number
+    ]).isRequired,
     title: PropTypes.string.isRequired
   })).isRequired,
   name: PropTypes.string.isRequired,
