@@ -35,7 +35,7 @@ class Fias extends Component {
 
   _prepareDefaultValue = (value) => {
     const arr = new Array()
-    let addrParts = addressPartitionals
+    let addrParts = { ...addressPartitionals }
     delete addrParts.zip
 
     Object.keys(addrParts).map(k => {
@@ -133,7 +133,7 @@ class Fias extends Component {
     }
 
     if (houseObj.structure) {
-      arr.push((`строение ${houseObj.structure}`))
+      arr.push(`строение ${houseObj.structure}`)
     }
 
     this.setState({
@@ -148,20 +148,15 @@ class Fias extends Component {
   }
 
   _ejectAppartmentFromAddressString = (value) => {
-    const arr = value.split(',')
-
     this.setState({
       addrObj: {
         ...this.state.addrObj,
-        appartment: arr[arr.length - 1].trim()
+        appartment: value.split(',').splice(-1).trim()
       }
     })
   }
 
-  _ejectHouseFromAddressString = (value) => {
-    const arr = value.split(',')
-    return arr[arr.length - 1].trim()
-  }
+  _ejectHouseFromAddressString = (value) => value.split(',').splice(-1).trim()
 
   _handleSwitchingToPreviousMode = (e) => {
     const { addressSubstring, houseSubstring } = this.state
@@ -263,8 +258,10 @@ class Fias extends Component {
 
     const value = Object.keys(addressPartitionals).reduce((result, name) => {
       const { value } = e.target.elements.namedItem(name)
+
+      result[name] = value ? value : null
+
       if (value) {
-        result[name] = value
         arr.push(`${addressPartitionals[name]} ${value}`)
       }
 
@@ -365,7 +362,7 @@ class Fias extends Component {
           key={name}
           type='hidden'
           name={name}
-          value={JSON.stringify(this.state.addrObj)}
+          value={JSON.stringify(addrObj)}
         />
         <AddressDialog
           open={openAddressDialog}
