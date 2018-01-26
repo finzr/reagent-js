@@ -148,15 +148,20 @@ class Fias extends Component {
   }
 
   _ejectAppartmentFromAddressString = (value) => {
+    const arr = value.split(',')
+
     this.setState({
       addrObj: {
         ...this.state.addrObj,
-        appartment: value.split(',').splice(-1).trim()
+        appartment: arr[arr.length - 1].trim()
       }
     })
   }
 
-  _ejectHouseFromAddressString = (value) => value.split(',').splice(-1).trim()
+  _ejectHouseFromAddressString = (value) => {
+     const arr = value.split(',')
+      return arr[arr.length - 1].trim()
+  }
 
   _handleSwitchingToPreviousMode = (e) => {
     const { addressSubstring, houseSubstring } = this.state
