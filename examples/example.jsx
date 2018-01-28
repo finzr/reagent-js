@@ -34,16 +34,6 @@ class App extends Component {
     const items = getBigDict()
     return (
       <Form
-        value={{
-          fias: {
-          build: null,
-          city: "Сыктывкар",
-          house: "28/1",
-          region: "Коми",
-          settlement: "Эжвинский",
-          street: "Мира"
-        }
-        }}
         schema={{
           type: 'object',
           properties: {
@@ -68,8 +58,9 @@ class App extends Component {
             fias: {
               type: 'fias',
               title: 'Адрес',
-              addressesUrl: 'http://192.168.33.48:8060/lookup?lookup=',
-              housesUrl: 'http://192.168.33.48:8060/lookup/houses_and_address_structure?lookup='
+              fetchAddresses: fetchAddresses,
+              fetchHouses: fetchHouses,
+              fetchRooms: fetchRooms
             }
           },
           //required: ['fias', 'text']
@@ -78,6 +69,24 @@ class App extends Component {
       />
     )
   }
+}
+
+function fetchAddresses(query) {
+  return fetch(`http://192.168.33.48:8060/lookup/search?query=${query}`)
+    .then(response => response.json())
+    .catch(() => { return { error: 'Ошибка получения адресов' } })
+}
+
+function fetchHouses(id) {
+  return fetch(`http://192.168.33.48:8060/lookup/houses_and_address_structure?aoguid=${id}`)
+    .then(response => response.json())
+    .catch(() => { return { error: 'Ошибка получения номеров домов' } })
+}
+
+function fetchRooms(id) {
+  return fetch(`http://192.168.33.48:8060/lookup/rooms?houseguid=${id}`)
+    .then(response => response.json())
+    .catch(() => { return { error: 'Ошибка получения квартир и помещений' } })
 }
 
 function getBigDict() {
