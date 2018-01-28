@@ -7,7 +7,6 @@ import SocialLocationCity from 'material-ui/svg-icons/social/location-city'
 import Spiner from './Spiner';
 import AddressDialog from '../AddressField/AddressDialog'
 
-import { fetchAddresses, fetchHouses } from './fetch_data'
 import { MODES } from './constants'
 
 import './style.less'
@@ -23,13 +22,16 @@ class Fias extends Component {
       addrObj: value || {},
       addresses: [],
       houses: [],
+      rooms: [],
       textValue: value ? this._prepareDefaultValue(value) : '',
       isVisible: false,
       fetchingError: null,
       openAddressDialog: false,
       addressSubstring: null,
       houseSubstring: null,
-      filteredHouses: []
+      roomSubstring: null,
+      filteredHouses: [],
+      filteredRooms: []
     }
   }
 
@@ -62,10 +64,10 @@ class Fias extends Component {
   }
 
   _loadAddresses = (query) => {
-    const { addressesUrl, headers } = this.props;
+    const { fetchAddresses } = this.props;
     this.setState({ isLoading: true })
 
-    fetchAddresses(addressesUrl, headers, query)
+    fetchAddresses(query)
       .then(addresses => {
         if (addresses.error) {
           this.setState({
@@ -89,10 +91,10 @@ class Fias extends Component {
   }
 
   _loadHouses = (aoguid) => {
-    const { housesUrl, headers } = this.props;
+    const { fetchHouses } = this.props;
     this.setState({ isLoading: true })
 
-    fetchHouses(housesUrl, headers, aoguid)
+    fetchHouses(aoguid)
       .then(json => {
         if (json.error) {
           this.setState({
@@ -101,12 +103,10 @@ class Fias extends Component {
             isLoading: false
           })
         } else {
-          const composedHouses = this._composeHouseString(json.houses)
-
           this.setState({
             addrObj: json.addr_obj,
-            houses: composedHouses,
-            filteredHouses: composedHouses,
+            houses: json.houses,
+            filteredHouses: json.houses,
             fetchingError: null,
             isVisible: true,
             isLoading: false,
@@ -120,28 +120,56 @@ class Fias extends Component {
       })
   }
 
-  _handleHouseSelect = (houseObj) => {
+  _handleHouseSelect = (house) => {
     const { addressSubstring } = this.state
-    const arr = new Array();
-
-    if (houseObj.house) {
-      arr.push(`дом ${houseObj.house}`)
-    }
-
-    if (houseObj.building) {
-      arr.push(`корпус ${houseObj.building}`)
-    }
-
-    if (houseObj.structure) {
-      arr.push(`строение ${houseObj.structure}`)
-    }
 
     this.setState({
-      houseSubstring: arr.join(''),
-      addrObj: { ...this.state.addrObj, ...houseObj },
-      textValue: `${addressSubstring}${arr.join('')}, кв. `,
+      houseSubstring: house.title + ',',
+      addrObj: { ...this.state.addrObj, ...house.original },
+      textValue: `${addressSubstring} ${house.title}, `,
       isVisible: false,
       mode: MODES.SELECTING_APPARTMENT
+    })
+
+    this._loadRooms(house.original.houseguid)
+    this.refs.fiasTextField.focus()
+  }
+
+  _loadRooms = (houseguid) => {
+    const { fetchRooms } = this.props
+
+    fetchRooms(houseguid)
+      .then(rooms => {
+        if (rooms.error) {
+          this.setState({
+            fetchingError: rooms.error,
+            isVisible: true,
+            isLoading: false
+          })
+        } else {
+          if (rooms.length === 1) {
+            this._handleRoomSelect(rooms[0])
+          }
+
+          this.setState({
+            rooms,
+            filteredRooms: rooms,
+            fetchingError: null,
+            isVisible: true,
+            isLoading: false
+          })
+        }
+      })
+  }
+
+  _handleRoomSelect = (room) => {
+    const { addressSubstring, houseSubstring } = this.state
+
+    this.setState({
+      roomSubstring: room.title,
+      addrObj: { ...this.state.addrObj, ...room.original },
+      textValue: `${addressSubstring} ${houseSubstring} ${room.title}`,
+      isVisible: false
     })
 
     this.refs.fiasTextField.focus()
@@ -164,7 +192,7 @@ class Fias extends Component {
   }
 
   _handleSwitchingToPreviousMode = (e) => {
-    const { addressSubstring, houseSubstring } = this.state
+    const { addressSubstring, houseSubstring, roomSubstring, textValue } = this.state
     const value = e.target.value
 
     if (addressSubstring && (addressSubstring.length > value.length)) {
@@ -177,6 +205,12 @@ class Fias extends Component {
     if (houseSubstring && ((addressSubstring + houseSubstring).length > value.length)) {
       this.setState({
         mode: MODES.SELECTING_HOUSE,
+        isVisible: true
+      })
+    }
+
+    if (roomSubstring && (textValue.length > value.length)) {
+      this.setState({
         isVisible: true
       })
     }
@@ -198,43 +232,28 @@ class Fias extends Component {
         this._filterOfHouses(value)
         break
       case MODES.SELECTING_APPARTMENT:
-        this._ejectAppartmentFromAddressString(value)
+        this._filterOfRooms(value)
         break
       default:
-        this.AddressRequestTimeout = setTimeout(this._loadAddresses, timeout || 1000, value)
+        this.AddressRequestTimeout = setTimeout(this._loadAddresses, timeout || 500, value)
         break
     }
-  }
-
-  _composeHouseString = (houses) => {
-    return houses.map(house => {
-      const arr = new Array();
-
-      if (house.house) {
-        arr.push(`дом ${house.house}`)
-      }
-
-      if (house.building) {
-        arr.push(`корпус ${house.building}`)
-      }
-
-      if (house.structure) {
-        arr.push((`строение ${house.structure}`))
-      }
-
-      return {
-        originalObject: house,
-        text: arr.join(', ')
-      }
-    })
   }
 
   _filterOfHouses = (value) => {
     const { houses } = this.state
     const ejectedValue = this._ejectHouseFromAddressString(value)
-    const filteredHouses = houses.filter(house => house.text.includes(ejectedValue))
+    const filteredHouses = houses.filter(house => house.title.includes(ejectedValue))
 
     this.setState({filteredHouses})
+  }
+
+  _filterOfRooms = (value) => {
+    const { rooms } = this.state
+    const ejectedValue = this._ejectHouseFromAddressString(value)
+    const filteredRooms = rooms.filter(room => room.title.includes(ejectedValue))
+
+    this.setState({filteredRooms})
   }
 
   _formatAddressString = (address) => {
@@ -294,6 +313,7 @@ class Fias extends Component {
     const {
       addresses,
       filteredHouses,
+      filteredRooms,
       fetchingError,
       mode,
       textValue
@@ -325,13 +345,28 @@ class Fias extends Component {
           items.push(
             <ListItem
               key={index}
-              onClick={() =>this._handleHouseSelect(house.originalObject)}
-              primaryText={`${house.text}`}
+              onClick={() =>this._handleHouseSelect(house)}
+              primaryText={`${house.title}`}
             />
           )
         })
 
         if (filteredHouses.length <= 5 && textValue.length > 0) {
+          items.push(this._listItemWithAddressDialogButton())
+        }
+        break
+      case MODES.SELECTING_APPARTMENT:
+        filteredRooms.slice(0, 9).map((room, index) => {
+          items.push(
+            <ListItem
+              key={index}
+              onClick={() =>this._handleRoomSelect(room)}
+              primaryText={`${room.title}`}
+            />
+          )
+        })
+
+        if (filteredRooms.length <= 5 && textValue.length > 0) {
           items.push(this._listItemWithAddressDialogButton())
         }
         break
@@ -429,12 +464,12 @@ const addressPartitionals = {
 Fias.propTypes = {
   title: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
-  addressesUrl: PropTypes.string.isRequired,
-  housesUrl: PropTypes.string.isRequired,
+  fetchAddresses: PropTypes.func.isRequired,
+  fetchHouses: PropTypes.func.isRequired,
+  fetchRooms: PropTypes.func.isRequired,
   value: PropTypes.object,
   required: PropTypes.bool,
-  timeout: PropTypes.number,
-  headers: PropTypes.object
+  timeout: PropTypes.number
 }
 
 export default Fias;
