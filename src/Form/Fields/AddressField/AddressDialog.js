@@ -3,7 +3,7 @@ import Dialog from 'material-ui/Dialog'
 import FlatButton from 'material-ui/FlatButton'
 import TextField from 'material-ui/TextField'
 
-const AddressDialog = ({onClose, onSubmit, onKeyUp, open, title, addressPartitionals, value }) => (
+const AddressDialog = ({onClose, onSubmit, onKeyUp, open, title, addressPartitionals, value, disablingNotEmptyFields }) => (
   <Dialog
     open={open}
     modal={false}
@@ -41,6 +41,7 @@ const AddressDialog = ({onClose, onSubmit, onKeyUp, open, title, addressPartitio
                   <TextField
                     id={name}
                     name={name}
+                    disabled={ disablingNotEmptyFields && value && value[name] ? true : false }
                     ref={c => i==0 && c && c.focus && c.focus()}
                     defaultValue={value && value[name] || ''}
                     maxLength={i==0 ? 6 : 200}

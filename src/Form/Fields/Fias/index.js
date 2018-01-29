@@ -324,6 +324,7 @@ class Fias extends Component {
           open={openAddressDialog}
           title={title}
           value={addrObj}
+          disablingNotEmptyFields={true}
           addressPartitionals={ADDRESS_PARTITIONALS}
           onClose={this._closeAddressDialog}
           onSubmit={ this._handleSubmit }
