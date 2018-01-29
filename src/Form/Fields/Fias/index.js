@@ -7,7 +7,11 @@ import SocialLocationCity from 'material-ui/svg-icons/social/location-city'
 import Spiner from './Spiner';
 import AddressDialog from '../AddressField/AddressDialog'
 
-import { MODES } from './constants'
+import { MODES, ADDRESS_PARTITIONALS } from './constants'
+import {
+  prepareDefaultValue,
+  filteredList
+} from './utils'
 
 import './style.less'
 
@@ -23,45 +27,30 @@ class Fias extends Component {
       addresses: [],
       houses: [],
       rooms: [],
-      textValue: value ? this._prepareDefaultValue(value) : '',
+      textValue: value ? prepareDefaultValue(value, { ...ADDRESS_PARTITIONALS }) : '',
       isVisible: false,
       fetchingError: null,
       openAddressDialog: false,
       addressSubstring: null,
       houseSubstring: null,
-      roomSubstring: null,
       filteredHouses: [],
       filteredRooms: []
     }
   }
 
-  _prepareDefaultValue = (value) => {
-    const arr = new Array()
-    let addrParts = { ...addressPartitionals }
-    delete addrParts.zip
+  _hideDropdown = () => this.setState({ isVisible: false })
 
-    Object.keys(addrParts).map(k => {
-      if (value[k]) {
-        arr.push(value[k])
-      }
-    })
+  _filterOfHouses = (value) => this.setState({filteredHouses: filteredList(this.state.houses, value)})
 
-    return arr.join(', ')
-  }
+  _filterOfRooms = (value) => this.setState({filteredRooms: filteredList(this.state.rooms, value)})
 
-  _hideAddressDropdown = () => this.setState({ isVisible: false })
+  _openAddressDialog = () => this.setState({ openAddressDialog: true })
 
-  _handleAddressSelect = (addr) => {
-    this.refs.fiasTextField.focus()
+  _closeAddressDialog = () => this.setState({ openAddressDialog: false })
 
-    this.setState({
-      textValue: addr.title + ', ',
-      addressSubstring: addr.title + ',',
-      mode: MODES.SELECTING_HOUSE
-    })
+  _handlePopupKeyUp = (e) => e.keyCode==27 && this._closeAddressDialog()
 
-    this._loadHouses(addr.aoguid)
-  }
+  _handleErrorReceived = (message) => this.setState({fetchingError: message, isVisible: true, isLoading: false})
 
   _loadAddresses = (query) => {
     const { fetchAddresses } = this.props;
@@ -70,11 +59,7 @@ class Fias extends Component {
     fetchAddresses(query)
       .then(addresses => {
         if (addresses.error) {
-          this.setState({
-            fetchingError: addresses.error,
-            isVisible: true,
-            isLoading: false
-          })
+          this._handleErrorReceived(addresses.error)
         } else {
           if (addresses.length === 1) {
             this._handleAddressSelect(addresses[0])
@@ -90,6 +75,18 @@ class Fias extends Component {
       })
   }
 
+  _handleAddressSelect = (addr) => {
+    this.refs.fiasTextField.focus()
+
+    this.setState({
+      textValue: `${addr.title}, `,
+      addressSubstring: `${addr.title},`,
+      mode: MODES.SELECTING_HOUSE
+    })
+
+    this._loadHouses(addr.aoguid)
+  }
+
   _loadHouses = (aoguid) => {
     const { fetchHouses } = this.props;
     this.setState({ isLoading: true })
@@ -97,12 +94,12 @@ class Fias extends Component {
     fetchHouses(aoguid)
       .then(json => {
         if (json.error) {
-          this.setState({
-            fetchingError: json.error,
-            isVisible: true,
-            isLoading: false
-          })
+          this._handleErrorReceived(json.error)
         } else {
+          if (json.houses.length === 1) {
+            this._handleHouseSelect(json.houses[0])
+          }
+
           this.setState({
             addrObj: json.addr_obj,
             houses: json.houses,
@@ -112,19 +109,16 @@ class Fias extends Component {
             isLoading: false,
             mode: MODES.SELECTING_HOUSE
           })
-
-          if (json.houses.length === 1) {
-            this._handleHouseSelect(json.houses[0])
-          }
         }
       })
   }
 
   _handleHouseSelect = (house) => {
     const { addressSubstring } = this.state
+    this.refs.fiasTextField.focus()
 
     this.setState({
-      houseSubstring: house.title + ',',
+      houseSubstring: `${house.title},`,
       addrObj: { ...this.state.addrObj, ...house.original },
       textValue: `${addressSubstring} ${house.title}, `,
       isVisible: false,
@@ -132,7 +126,6 @@ class Fias extends Component {
     })
 
     this._loadRooms(house.original.houseguid)
-    this.refs.fiasTextField.focus()
   }
 
   _loadRooms = (houseguid) => {
@@ -141,11 +134,7 @@ class Fias extends Component {
     fetchRooms(houseguid)
       .then(rooms => {
         if (rooms.error) {
-          this.setState({
-            fetchingError: rooms.error,
-            isVisible: true,
-            isLoading: false
-          })
+          this._handleErrorReceived(rooms.error)
         } else {
           if (rooms.length === 1) {
             this._handleRoomSelect(rooms[0])
@@ -164,35 +153,22 @@ class Fias extends Component {
 
   _handleRoomSelect = (room) => {
     const { addressSubstring, houseSubstring } = this.state
+    this.refs.fiasTextField.focus()
 
     this.setState({
-      roomSubstring: room.title,
       addrObj: { ...this.state.addrObj, ...room.original },
       textValue: `${addressSubstring} ${houseSubstring} ${room.title}`,
       isVisible: false
     })
-
-    this.refs.fiasTextField.focus()
-  }
-
-  _ejectAppartmentFromAddressString = (value) => {
-    const arr = value.split(',')
-
-    this.setState({
-      addrObj: {
-        ...this.state.addrObj,
-        appartment: arr[arr.length - 1].trim()
-      }
-    })
-  }
-
-  _ejectHouseFromAddressString = (value) => {
-     const arr = value.split(',')
-      return arr[arr.length - 1].trim()
   }
 
   _handleSwitchingToPreviousMode = (e) => {
-    const { addressSubstring, houseSubstring, roomSubstring, textValue } = this.state
+    const {
+      addressSubstring,
+      houseSubstring,
+      textValue
+    } = this.state
+
     const value = e.target.value
 
     if (addressSubstring && (addressSubstring.length > value.length)) {
@@ -209,7 +185,7 @@ class Fias extends Component {
       })
     }
 
-    if (roomSubstring && (textValue.length > value.length)) {
+    if (textValue.length > value.length) {
       this.setState({
         isVisible: true
       })
@@ -235,157 +211,97 @@ class Fias extends Component {
         this._filterOfRooms(value)
         break
       default:
-        this.AddressRequestTimeout = setTimeout(this._loadAddresses, timeout || 500, value)
+        this.AddressRequestTimeout = setTimeout(
+          this._loadAddresses,
+          timeout || 500,
+          value
+        )
         break
     }
   }
 
-  _filterOfHouses = (value) => {
-    const { houses } = this.state
-    const ejectedValue = this._ejectHouseFromAddressString(value)
-    const filteredHouses = houses.filter(house => house.title.includes(ejectedValue))
-
-    this.setState({filteredHouses})
-  }
-
-  _filterOfRooms = (value) => {
-    const { rooms } = this.state
-    const ejectedValue = this._ejectHouseFromAddressString(value)
-    const filteredRooms = rooms.filter(room => room.title.includes(ejectedValue))
-
-    this.setState({filteredRooms})
-  }
-
-  _formatAddressString = (address) => {
-    if (!address) return null
-    const appendStringToAddress = (addrStr, string, prefix) => {
-      if (string) {
-        return `${addrStr}${addrStr ? ', ' : ''}${prefix || ''}${string}`
-      } else {
-        return addrStr
-      }
-    }
-    return Object.keys(addressPartitionals).reduce((addrStr, key) => (
-      appendStringToAddress(addrStr, address[key])
-    ), '')
-  }
-
-  _openAddressDialog = () => this.setState({ openAddressDialog: true })
-
-  _closeAddressDialog = () => this.setState({ openAddressDialog: false })
-
-  _handlePopupKeyUp = (e) => e.keyCode==27 && this._closeAddressDialog()
-
   _handleSubmit = (e) => {
     e.preventDefault()
-    const arr = new Array()
 
-    const value = Object.keys(addressPartitionals).reduce((result, name) => {
+    const value = Object.keys(ADDRESS_PARTITIONALS).reduce((result, name) => {
       const { value } = e.target.elements.namedItem(name)
-
       result[name] = value ? value : null
-
-      if (value) {
-        arr.push(`${addressPartitionals[name]} ${value}`)
-      }
-
       return result
     },{})
 
+    const valueStr = prepareDefaultValue(value, { ...ADDRESS_PARTITIONALS })
+
     this.setState({
       addrObj: { ...this.state.addrObj, ...value },
-      textValue: arr.join(', '),
-      addressSubstring: arr.join(', '),
+      textValue: valueStr,
+      addressSubstring: valueStr,
       houseSubstring: null,
       openAddressDialog: false,
       isVisible: false
     })
   }
 
-  _listItemWithAddressDialogButton = () =>
-    <ListItem
-      disabled={true}
-      primaryText='Адрес отсутствует в базе ФИАС. Нажмите кнопку и введите адрес вручную'
-      rightAvatar={this._openAddressDialogButton()}
-    />
+  _listItems = (list, handler, showAddressButton = false) => {
+    const { textValue } = this.state
+    const mappedArr = list.map((el, index) => (
+      <ListItem
+        key={index}
+        onClick={() => handler(el)}
+        primaryText={el.title}
+      />
+    ))
 
-  _listItems = () => {
+    if (list.length <= 5 && textValue.length > 0 && showAddressButton) {
+      mappedArr.push(this._listItemWithAddressDialogButton())
+    }
+
+    return mappedArr
+  }
+
+  _listItemsSwitcher = () => {
     const {
       addresses,
       filteredHouses,
       filteredRooms,
       fetchingError,
-      mode,
-      textValue
+      mode
     } = this.state
-    const items = new Array()
 
     if (fetchingError) {
       return <ListItem disabled={true} primaryText={`${fetchingError}`} />
     }
 
-    switch(mode) {
-      case MODES.SELECTING_ADDRESS:
-        if (addresses.length === 0 && textValue.length > 0) {
-          items.push(this._listItemWithAddressDialogButton())
-        }
-
-        addresses.map((address, index) => {
-          items.push(
-            <ListItem
-              key={index}
-              onClick={() =>this._handleAddressSelect(address)}
-              primaryText={address.title}
-            />
-          )
-        })
-        break
-      case MODES.SELECTING_HOUSE:
-        filteredHouses.slice(0, 9).map((house, index) => {
-          items.push(
-            <ListItem
-              key={index}
-              onClick={() =>this._handleHouseSelect(house)}
-              primaryText={`${house.title}`}
-            />
-          )
-        })
-
-        if (filteredHouses.length <= 5 && textValue.length > 0) {
-          items.push(this._listItemWithAddressDialogButton())
-        }
-        break
-      case MODES.SELECTING_APPARTMENT:
-        filteredRooms.slice(0, 9).map((room, index) => {
-          items.push(
-            <ListItem
-              key={index}
-              onClick={() =>this._handleRoomSelect(room)}
-              primaryText={`${room.title}`}
-            />
-          )
-        })
-
-        if (filteredRooms.length <= 5 && textValue.length > 0) {
-          items.push(this._listItemWithAddressDialogButton())
-        }
-        break
-      default:
-        break
+    if (mode === MODES.SELECTING_ADDRESS) {
+      return this._listItems(addresses, this._handleAddressSelect)
     }
 
-    return items
+    if (mode === MODES.SELECTING_HOUSE) {
+      return this._listItems(filteredHouses.slice(0, 9), this._handleHouseSelect, true)
+    }
+
+    if (mode === MODES.SELECTING_APPARTMENT) {
+      return this._listItems(filteredRooms.slice(0, 9), this._handleRoomSelect, true)
+    }
   }
 
-  _openAddressDialogButton = () =>
-    (<FloatingActionButton
+  _openAddressDialogButton = () => (
+    <FloatingActionButton
       mini={true}
       onClick={this._openAddressDialog}
       secondary={true}
       tabIndex={-1}
     >
       <SocialLocationCity/>
-    </FloatingActionButton>)
+    </FloatingActionButton>
+  )
+
+  _listItemWithAddressDialogButton = () => (
+    <ListItem
+      disabled={true}
+      primaryText='Адрес отсутствует в базе ФИАС. Нажмите кнопку и введите адрес вручную'
+      rightAvatar={this._openAddressDialogButton()}
+    />
+  )
 
   render() {
     const { title, required, name } = this.props;
@@ -408,7 +324,7 @@ class Fias extends Component {
           open={openAddressDialog}
           title={title}
           value={addrObj}
-          addressPartitionals={addressPartitionals}
+          addressPartitionals={ADDRESS_PARTITIONALS}
           onClose={this._closeAddressDialog}
           onSubmit={ this._handleSubmit }
           onKeyUp={ this._handlePopupKeyUp }
@@ -427,7 +343,7 @@ class Fias extends Component {
             <div className='c-fiac__main-block'>
               <div
                 className='c-fiac__paper-background'
-                onClick={() => this._hideAddressDropdown()}
+                onClick={() => this._hideDropdown()}
               ></div>
               <Paper
                 className='c-fiac__paper'
@@ -436,7 +352,7 @@ class Fias extends Component {
                   isLoading ? (
                     <Spiner />
                   ) : (
-                    <List>{this._listItems()}</List>
+                    <List>{this._listItemsSwitcher()}</List>
                   )
                 }
               </Paper>
@@ -446,20 +362,7 @@ class Fias extends Component {
       </div>
     )
   }
-}
-
-const addressPartitionals = {
-  zip: 'Индекс',
-  region: 'Регион',
-  sub_region: 'Район',
-  city: 'Город',
-  settlement: 'Населенный пункт',
-  street: 'Улица',
-  house: 'Дом',
-  building: 'Корпус',
-  structure: 'Строение',
-  appartment: 'Помещение'
-}
+}``
 
 Fias.propTypes = {
   title: PropTypes.string.isRequired,
