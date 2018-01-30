@@ -46,12 +46,12 @@ class AddressField extends Component {
     e.preventDefault()
     const value = Object.keys(addressPartitionals).reduce((result, name) => {
       const { value } = e.target.elements.namedItem(name)
-      value ? result[name] = value : null
+      value.trim() ? result[name] = value.trim() : null
       return result
     },{})
     Object.keys(addressPartitionals).map(name => {
       const { value } = e.target.elements.namedItem(name)
-      this.refs[name].value = value
+      this.refs[name].value = value.trim()
     })
     this.setState({
       value,
