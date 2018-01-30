@@ -114,18 +114,28 @@ class Fias extends Component {
   }
 
   _handleHouseSelect = (house) => {
+    const { withoutAppartments } = this.props
     const { addressSubstring } = this.state
     this.refs.fiasTextField.focus()
 
-    this.setState({
-      houseSubstring: `${house.title},`,
-      addrObj: { ...this.state.addrObj, ...house.original },
-      textValue: `${addressSubstring} ${house.title}, `,
-      isVisible: false,
-      mode: MODES.SELECTING_APPARTMENT
-    })
+    if (withoutAppartments) {
+      this.setState({
+        houseSubstring: `${house.title}`,
+        addrObj: { ...this.state.addrObj, ...house.original },
+        textValue: `${addressSubstring} ${house.title}`,
+        isVisible: false
+      })
+    } else {
+      this.setState({
+        houseSubstring: `${house.title},`,
+        addrObj: { ...this.state.addrObj, ...house.original },
+        textValue: `${addressSubstring} ${house.title}, `,
+        isVisible: false,
+        mode: MODES.SELECTING_APPARTMENT
+      })
 
-    this._loadRooms(house.original.houseguid)
+      this._loadRooms(house.original.houseguid)
+    }
   }
 
   _loadRooms = (houseguid) => {
@@ -373,7 +383,8 @@ Fias.propTypes = {
   fetchRooms: PropTypes.func.isRequired,
   value: PropTypes.object,
   required: PropTypes.bool,
-  timeout: PropTypes.number
+  timeout: PropTypes.number,
+  withoutAppartments: PropTypes.bool
 }
 
 export default Fias;
